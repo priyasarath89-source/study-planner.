@@ -1,0 +1,52 @@
+import streamlit as st
+import pandas as pd
+import os
+
+st.set_page_config(page_title="Study Planner", page_icon="📚", layout="centered")
+
+st.title("📚 Study Planner")
+
+# File to store tasks
+FILE_NAME = "tasks.csv"
+
+# Load or initialize tasks
+if os.path.exists(FILE_NAME):
+    df = pd.read_csv(FILE_NAME)
+else:
+    df = pd.DataFrame(columns=["Task", "Subject", "Status"])
+
+# Add Task Section
+st.subheader("Add New Task")
+with st.form("add_task_form", clear_on_submit=True):
+    task_name = st.text_input("Task Description")
+    subject = st.text_input("Subject")
+    submitted = st.form_submit_button("Add Task")
+    
+    if submitted and task_name:
+        new_row = pd.DataFrame([{"Task": task_name, "Subject": subject, "Status": "Pending"}])
+        df = pd.concat([df, new_row], ignore_index=True)
+        df.to_csv(FILE_NAME, index=False)
+        st.success(f"Added task: {task_name}")
+
+# View Tasks Section
+st.subheader("Your Tasks")
+if df.empty:
+    st.info("No tasks added yet!")
+else:
+    st.dataframe(df, use_container_width=True)
+
+    # Manage Tasks
+    st.subheader("Manage Tasks")
+    task_to_mark = st.selectbox("Select task to mark completed", ["None"] + df["Task"].tolist())
+    if st.button("Mark Completed") and task_to_mark != "None":
+        df.loc[df["Task"] == task_to_mark, "Status"] = "Completed"
+        df.to_csv(FILE_NAME, index=False)
+        st.success("Task updated!")
+        st.rerun()
+
+    task_to_delete = st.selectbox("Select task to delete", ["None"] + df["Task"].tolist())
+    if st.button("Delete Task") and task_to_delete != "None":
+        df = df[df["Task"] != task_to_delete]
+        df.to_csv(FILE_NAME, index=False)
+        st.warning("Task deleted!")
+        st.rerun()
